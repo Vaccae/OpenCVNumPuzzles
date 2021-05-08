@@ -118,10 +118,15 @@ void onMouse(int event, int x, int y, int flags, void* param)
 					usetime = ((double)getTickCount() - usetime) / getTickFrequency();
 					cout << "还原完成！用时：" << usetime << "秒！" << endl;
 				}
-
 			}
 		}
 
+	}
+	break;
+	case EVENT_MBUTTONUP:
+	{
+		//自动还原
+		Puzzles4x4::RestoreGame(nummatrix);
 	}
 	break;
 	case EVENT_RBUTTONDBLCLK:

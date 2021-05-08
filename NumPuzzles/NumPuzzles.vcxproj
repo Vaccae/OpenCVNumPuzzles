@@ -141,11 +141,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CalcPathPlan.cpp" />
     <ClCompile Include="CalcReverseNum.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Puzzles4x4.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CalcPathPlan.h" />
     <ClInclude Include="CalcReverseNum.h" />
     <ClInclude Include="Puzzles4x4.h" />
   </ItemGroup>
