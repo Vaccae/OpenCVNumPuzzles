@@ -126,6 +126,7 @@ void onMouse(int event, int x, int y, int flags, void* param)
 	case EVENT_MBUTTONUP:
 	{
 		//自动还原
+		Puzzles4x4::IsShowStep = false;
 		Puzzles4x4::RestoreGame(nummatrix);
 	}
 	break;

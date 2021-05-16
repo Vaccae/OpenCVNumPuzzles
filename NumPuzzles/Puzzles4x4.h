@@ -36,6 +36,8 @@ enum RestoreStep {
 };
 
 static vector<pair<int, int>> RestorePath;
+//还原的步骤
+static vector<pair<pair<int, int>, pair<int, int>>> VetRestoreSteps;
 
 class Puzzles4x4
 {
@@ -73,6 +75,7 @@ private:
 	static void DrawPuzzles(vector<vector<int>>& nummatrix, vector<pair<int, int>> movepath = RestorePath);
 public:
 	static int SleepTime;
+	static bool IsShowStep;
 
 	static vector<int> RandVectorNum();
 	static void CreateNewGame(vector<vector<int>>& vts, vector<int> tmpvts);

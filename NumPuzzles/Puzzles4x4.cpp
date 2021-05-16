@@ -1,6 +1,7 @@
 #include "Puzzles4x4.h"
 
 int Puzzles4x4::SleepTime = 200;
+bool Puzzles4x4::IsShowStep = true;
 
 //检测当前要还原的步骤
 //返回数字为当前对应的数字步骤，特殊步骤用其它数字标识
@@ -137,6 +138,10 @@ vector<pair<int, int>> Puzzles4x4::FindPath(vector<vector<int>>& sites, pair<int
 //两个点交换位置
 void Puzzles4x4::SwapPos(vector<vector<int>>& vts, pair<int, int>& firstPos, pair<int, int>& secondPos)
 {
+	//插入还原步骤
+	pair<pair<int, int>, pair<int, int>> curstep(firstPos, secondPos);
+	VetRestoreSteps.push_back(curstep);
+
 	int tmpnum = vts[firstPos.first][firstPos.second];
 	vts[firstPos.first][firstPos.second] = vts[secondPos.first][secondPos.second];
 	vts[secondPos.first][secondPos.second] = tmpnum;
@@ -397,9 +402,10 @@ int Puzzles4x4::ZeroMove(vector<vector<int>>& vts, vector<vector<int>>& sites, p
 	return zeropath.size();
 }
 
+//绘制图像
 void Puzzles4x4::DrawPuzzles(vector<vector<int>>& nummatrix, vector<pair<int, int>> movepath)
 {
-
+	if (!IsShowStep) return;
 	int starttop = 50;
 	int startleft = 50;
 	int rectlen = 100;
@@ -570,6 +576,8 @@ bool Puzzles4x4::CheckFinished(vector<vector<int>>& vts)
 //还原游戏
 void Puzzles4x4::RestoreGame(vector<vector<int>>& vts)
 {
+	double usetime = (double)getTickCount();
+	cout << "AI自动还原计时开始" << endl;
 	//复制原棋盘
 	vector<vector<int>> bakvts(vts.size(), vector<int>(vts[0].size(), 0));
 	for (int row = 0; row <= vts.size() - 1; ++row) {
@@ -661,5 +669,14 @@ void Puzzles4x4::RestoreGame(vector<vector<int>>& vts)
 			break;
 		}
 	}
+
+	usetime = ((double)getTickCount() - usetime) / getTickFrequency();
+	cout << "还原步骤如下：" << endl;
+	for (auto curstep : VetRestoreSteps) {
+		cout << curstep.first.first << "," << curstep.first.second << " --> " << curstep.second.first << "," << curstep.second.second << endl;
+	}
+
+	cout << "共计：" << VetRestoreSteps.size() << "步" << endl;
+	cout << "AI自动还原完成！用时：" << usetime << "秒！" << endl;
 }
 
