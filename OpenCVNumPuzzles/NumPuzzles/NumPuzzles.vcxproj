@@ -65,11 +65,11 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\OpenCV_Debug.props" />
+    <Import Project="..\..\..\OpenCV_Debug.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\OpenCV_Relese.props" />
+    <Import Project="..\..\..\OpenCV_Relese.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -141,14 +141,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="CalcPathPlan.cpp" />
-    <ClCompile Include="CalcReverseNum.cpp" />
+    <ClCompile Include="..\..\Utils\CalcPathPlan.cpp" />
+    <ClCompile Include="..\..\Utils\CalcReverseNum.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Puzzles4x4.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CalcPathPlan.h" />
-    <ClInclude Include="CalcReverseNum.h" />
+    <ClInclude Include="..\..\Utils\CalcPathPlan.h" />
+    <ClInclude Include="..\..\Utils\CalcReverseNum.h" />
     <ClInclude Include="Puzzles4x4.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

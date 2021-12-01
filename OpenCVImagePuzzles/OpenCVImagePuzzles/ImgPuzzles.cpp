@@ -1,4 +1,5 @@
 #include "ImgPuzzles.h"
+#include "..\..\Utils\CalcReverseNum.h"
 
 //输出显示图像
 cv::Mat ImgPuzzles::PuzzleMat = cv::Mat();
@@ -37,6 +38,9 @@ void ImgPuzzles::SplitMats(cv::Mat& img, int cols, int rows)
 	//生成序号列表
 	std::vector<int> nums = GetVtsPos(cols, rows);
 
+	//加入数字对比，用于计算逆对的问题
+	std::vector<int> reversenums;
+
 	//根据输入的行和列划分开矩形
 	for (int row = 0; row < rows; row++) {
 		for (int col = 0; col < cols; col++) {
@@ -72,9 +76,30 @@ void ImgPuzzles::SplitMats(cv::Mat& img, int cols, int rows)
 
 			//根据随机排序后的位置插入到容器中
 			vtsCutMat[newrow][newcol] = tmpcurmat;
+
+			//插入逆序对计算容器中
+			reversenums.push_back(tmpcurmat->curposition);
 		}
 	}
 
+	//生成的随机逆序对中，最后一个是固定的，所以去掉最后一个计算
+	reversenums.pop_back();
+	//检测随机生成的逆序对，防止九宫格无解
+	int count = CalcReverseNum::MergeSort(reversenums, 0, reversenums.size() - 1);
+	cout << "分治计算:" << count << endl;
+
+	//计算逆序对个数，如果是偶数即可还原
+	if ((count % 2) != 0) {
+		//如果是奇数说明无解，针对九宫格将第三行第一列和第二行第一列进行替换
+		finalCutMat = vtsCutMat[vtsCutMat.size() - 1][0];
+		
+		vtsCutMat[vtsCutMat.size() - 1][0] = vtsCutMat[vtsCutMat.size() - 2][0];
+		int tmpcurposition = vtsCutMat[vtsCutMat.size() - 1][0]->curposition;
+		vtsCutMat[vtsCutMat.size() - 1][0]->curposition = finalCutMat->curposition;
+
+		vtsCutMat[vtsCutMat.size() - 2][0] = finalCutMat;
+		vtsCutMat[vtsCutMat.size() - 1][0]->curposition = tmpcurposition;
+	}
 }
 
 void ImgPuzzles::CreatePuzzleMat()

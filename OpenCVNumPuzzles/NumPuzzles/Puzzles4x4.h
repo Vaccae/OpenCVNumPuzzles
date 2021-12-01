@@ -5,8 +5,8 @@
 #include <iomanip>
 #include <Windows.h>
 #include <opencv2/opencv.hpp>
-#include "CalcReverseNum.h"
-#include "CalcPathPlan.h"
+#include "..\..\Utils\CalcPathPlan.h"
+#include "..\..\Utils\CalcReverseNum.h"
 
 using namespace std;
 using namespace cv;

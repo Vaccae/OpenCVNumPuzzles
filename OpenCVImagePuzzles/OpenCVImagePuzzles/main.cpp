@@ -12,7 +12,7 @@ int main(int argc, char** argv) {
 
 	try
 	{
-		Mat src = imread("E:/DCIM/test8.jpg");
+		Mat src = imread("E:/DCIM/Resize/src2.png");
 
 		if (src.empty()) {
 			cout << "Í¼Ïñ¼ÓÔØÊ§°Ü¡£¡£¡£¡£" << endl;

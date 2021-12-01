@@ -21,10 +21,10 @@
     <ClCompile Include="Puzzles4x4.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="CalcReverseNum.cpp">
+    <ClCompile Include="..\..\Utils\CalcPathPlan.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="CalcPathPlan.cpp">
+    <ClCompile Include="..\..\Utils\CalcReverseNum.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -32,10 +32,10 @@
     <ClInclude Include="Puzzles4x4.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="CalcReverseNum.h">
+    <ClInclude Include="..\..\Utils\CalcPathPlan.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="CalcPathPlan.h">
+    <ClInclude Include="..\..\Utils\CalcReverseNum.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
