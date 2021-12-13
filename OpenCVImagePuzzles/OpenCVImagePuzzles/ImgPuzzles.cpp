@@ -1,9 +1,10 @@
 #include "ImgPuzzles.h"
-#include "..\..\Utils\CalcReverseNum.h"
+
 
 //输出显示图像
+cv::Mat ImgPuzzles::TmpSrc = cv::Mat();
 cv::Mat ImgPuzzles::PuzzleMat = cv::Mat();
-int ImgPuzzles::SleepTime = 200;
+int ImgPuzzles::SleepTime = 400;
 bool ImgPuzzles::IsShowStep = true;
 //计算还原时间
 double ImgPuzzles::PuzzleUseTime = (double)cv::getTickCount();
@@ -28,6 +29,10 @@ void ImgPuzzles::SplitMats(cv::Mat& img, int cols, int rows)
 		std::cout << "行数和列数不能为0" << std::endl;
 		return;
 	}
+	//复制源图像
+	img.copyTo(TmpSrc);
+
+	Status = 0;
 	//根据行和列直接设置容器的个数
 	vtsCutMat = std::vector<std::vector<CutMat*>>(rows, std::vector<CutMat*>(cols, nullptr));
 
@@ -92,14 +97,19 @@ void ImgPuzzles::SplitMats(cv::Mat& img, int cols, int rows)
 	if ((count % 2) != 0) {
 		//如果是奇数说明无解，针对九宫格将第三行第一列和第二行第一列进行替换
 		finalCutMat = vtsCutMat[vtsCutMat.size() - 1][0];
-		
+
 		vtsCutMat[vtsCutMat.size() - 1][0] = vtsCutMat[vtsCutMat.size() - 2][0];
 		int tmpcurposition = vtsCutMat[vtsCutMat.size() - 1][0]->curposition;
 		vtsCutMat[vtsCutMat.size() - 1][0]->curposition = finalCutMat->curposition;
 
 		vtsCutMat[vtsCutMat.size() - 2][0] = finalCutMat;
-		vtsCutMat[vtsCutMat.size() - 1][0]->curposition = tmpcurposition;
+		vtsCutMat[vtsCutMat.size() - 2][0]->curposition = tmpcurposition;
 	}
+	//for (int row = 0; row < vtsCutMat.size(); ++row) {
+	//	for (int col = 0; col < vtsCutMat[row].size(); ++col) {
+	//		std::cout << " " << vtsCutMat[row][col]->curposition << std::endl;
+	//	}
+	//}
 }
 
 void ImgPuzzles::CreatePuzzleMat()
@@ -168,6 +178,117 @@ void ImgPuzzles::DrawPuzzleMat(int& curposition, int& newposition)
 	tmpmat.copyTo(PuzzleMat(newrect));
 
 	cv::imshow("puzzle", PuzzleMat);
+}
+
+//AI自动还原
+void ImgPuzzles::RestoreGame()
+{
+	double usetime = (double)cv::getTickCount();
+	cout << "AI自动还原计时开始" << endl;
+
+
+	vector<vector<int>> sites;
+	//当前规划路线中每一步的行动路线
+	vector<pair<int, int>> currectpath;
+	//开始还原
+	while (!CheckFinished(vtsCutMat)) {
+		if (Status == 0) {
+			int row = 2;
+			int col = 2;
+			int curposition = vtsCutMat[row][col]->curposition;
+			int newposition = -1;
+			if (ImageMove(row, col, curposition, newposition)) {
+				DrawPuzzleMat(curposition, newposition);
+				Status = 1;
+				cv::waitKey(SleepTime);
+			}
+
+			continue;
+		}
+		//1.先检测当前棋盘需要还原的
+		int step = CheckSteps(vtsCutMat, sites);
+		cout << "step:" << step << endl;
+
+		//2.计算路径
+		switch (step)
+		{
+		case RestoreStep::Num1:
+		case RestoreStep::Num2:
+		case RestoreStep::Num3:
+		case RestoreStep::Num4:
+		case RestoreStep::Num5:
+		case RestoreStep::Num6:
+		case RestoreStep::Num7:
+		case RestoreStep::Num8:
+		{
+			//获取开始结束的点位置
+			pair<int, int> sPos;
+			pair<int, int> ePos;
+			GetPos(vtsCutMat, step, sPos, ePos);
+			//获取应到达位置
+			RestorePath = FindPath(sites, sPos, ePos, DirectFirst::Up);
+
+			//3.遍历路径每一步处理移动路径
+			for (int i = 0; i < RestorePath.size(); ++i) {
+				cout << RestorePath[i].first << " " << RestorePath[i].second << endl;
+				//3.1数字当前位置不计算
+				int front = i - 1;
+				if (front < 0) continue;
+
+				//3.3把数字当前位置设置为障碍点，这样0不允许与当前数字交换位置
+				//cout << "sites:" << restorepath[front].first << " " << restorepath[front].second << endl;
+				sites[RestorePath[front].first][RestorePath[front].second] = 1;
+
+				int stepnum = NullMove(sites, RestorePath[i]);
+				if (stepnum != 0) {
+					//3.3.3 取消当前地图上的障碍点
+					sites[RestorePath[front].first][RestorePath[front].second] = 0;
+
+					int row = RestorePath[front].first;
+					int col = RestorePath[front].second;
+					int curposition = vtsCutMat[row][col]->curposition;
+					int newposition = -1;
+
+					if (ImageMove(row, col, curposition, newposition)) {
+						DrawPuzzleMat(curposition, newposition);
+						cv::waitKey(SleepTime);
+					}
+				}
+				else {
+					std::cout << "dealstep:" << step << std::endl;
+					//如果没有路径就是遇到特殊情况，进行单独处理
+					DealStep(sites, step);
+				}
+			}
+		}
+		break;
+		case RestoreStep::Step4and5:
+		case RestoreStep::StepFinal:
+		{
+			DealStep(sites, step);
+		}
+		break;
+		case RestoreStep::Num9:
+		{
+			int row = 99;
+			int col = 99;
+			int curposition = vtsContours.size();
+			int newposition = -1;
+
+			if (ImageMove(row, col, curposition, newposition)) {
+				//重新生成图像显示
+				DrawPuzzleMat(curposition, newposition);
+				cv::waitKey(SleepTime);
+			}
+		}
+		default:
+			break;
+		}
+	}
+
+	usetime = ((double)cv::getTickCount() - usetime) / cv::getTickFrequency();
+	cout << "AI自动还原完成！用时：" << usetime << "秒！" << endl;
+
 }
 
 //生成序号容器
@@ -244,12 +365,19 @@ void ImgPuzzles::OnMouseEvent(int event, int x, int y, int flags, void* param)
 	break;
 	case cv::MouseEventTypes::EVENT_MBUTTONUP:
 	{
-
+		//自动还原
+		RestoreGame();
 	}
 	break;
 	case cv::MouseEventTypes::EVENT_RBUTTONDBLCLK:
 	{
+		//获取图像分割后的集合
+		SplitMats(TmpSrc);
 
+		//绘制图像
+		CreatePuzzleMat();
+
+		Status = 0;
 	}
 	break;
 	default:
@@ -326,6 +454,7 @@ bool ImgPuzzles::ImageMove(int& row, int& col, int& curposition, int& newpositio
 		}
 	}
 
+	//std::cout << "row:" << row << " col:" << col << " cur:" << curposition << " new:" << newposition << std::endl;
 	return res;
 }
 
@@ -351,5 +480,295 @@ void ImgPuzzles::GetMousePostion(cv::Point pt, int& row, int& col, int& curposit
 			}
 		}
 	}
+}
+
+int ImgPuzzles::CheckSteps(std::vector<std::vector<CutMat*>>& vts, std::vector<std::vector<int>>& sites)
+{
+	//检测当前要还原的步骤及初始化路径地图
+	sites = vector<vector<int>>(vts.size(), vector<int>(vts[0].size(), 0));
+
+	int step = RestoreStep::NONE;
+
+	int checknum = 1;
+	for (int row = 0; row <= vts.size() - 1; ++row) {
+		for (int col = 0; col <= vts[row].size() - 1; ++col) {
+			switch (checknum)
+			{
+			case RestoreStep::Num1:
+			case RestoreStep::Num2:
+			case RestoreStep::Num3:
+			case RestoreStep::Num6:
+			case RestoreStep::Num7:
+			case RestoreStep::Num8:
+			{
+				if (vts[row][col] != nullptr && vts[row][col]->position == checknum) {
+					sites[row][col] = 1;
+					checknum++;
+				}
+				else {
+					return checknum;
+				}
+			}
+			break;
+			case RestoreStep::Num4:
+			case RestoreStep::Num5:
+			{
+				if (vts[2][0] != nullptr && vts[1][0] != nullptr && vts[2][0]->position == 4 && vts[1][0]->position == 5 ){
+					if (vts[1][2] != nullptr && vts[1][2]->position != 6)
+					{
+						sites[2][0] = 1;
+						sites[1][0] = 1;
+						return RestoreStep::Num6;
+					}
+					else if (vts[1][2] == nullptr) {
+						sites[2][0] = 1;
+						sites[1][0] = 1;
+						return RestoreStep::Num6;
+					}
+					else {
+						return RestoreStep::Step4and5;
+					}
+				}
+				else if (vts[row][col] != nullptr && vts[row][col]->position == checknum) {
+					sites[row][col] = 1;
+					checknum++;
+				}
+				else {
+					return checknum;
+				}
+			}
+			break;
+			case RestoreStep::Num9:
+			{
+				if (vts[row][col] == nullptr) {
+					return checknum;
+				}
+			}
+			break;
+			default:
+				break;
+			}
+		}
+	}
+	return step;
+}
+
+bool ImgPuzzles::CheckFinished(std::vector<std::vector<CutMat*>>& vts)
+{
+	//计算总行数
+	int rows = vts.size() - 1;
+	//计算总列数
+	int cols = vts[rows].size() - 1;
+
+	int checknum = 1;
+	for (int row = 0; row <= rows; ++row) {
+		for (int col = 0; col <= cols; ++col) {
+			//最后一格已经检测，直接退出
+			//if (col == cols && row == rows) return true;
+			if (vts[row][col] == nullptr) return false;
+			if (vts[row][col]->position != checknum) return false;
+			checknum++;
+			if (checknum > 9) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+void ImgPuzzles::GetPos(std::vector<std::vector<CutMat*>>& vts, int num, std::pair<int, int>& startpos, std::pair<int, int>& endpos)
+{
+	for (int row = 0; row <= vts.size() - 1; ++row) {
+		for (int col = 0; col <= vts[row].size() - 1; ++col) {
+			if (vts[row][col] == nullptr) continue;
+			if (vts[row][col]->position == num) {
+				startpos.first = row;
+				startpos.second = col;
+
+				int erow = (vts[row][col]->position - 1) / vts[row].size();
+				int ecol = (vts[row][col]->position - 1) % vts[row].size();
+				endpos.first = erow;
+				endpos.second = ecol;
+
+				break;
+			}
+		}
+	}
+}
+
+std::pair<int, int> ImgPuzzles::GetNullPos(std::vector<std::vector<CutMat*>>& vts)
+{
+	pair<int, int> pos;
+	for (int row = 0; row <= vts.size() - 1; ++row) {
+		for (int col = 0; col <= vts[row].size() - 1; ++col) {
+			if (vts[row][col] == nullptr) {
+				pos.first = row;
+				pos.second = col;
+				break;
+			}
+		}
+	}
+	return pos;
+}
+
+int ImgPuzzles::NullMove(vector<vector<int>>& sites, pair<int, int>& endPos, int MoveDirect)
+{
+	pair<int, int> ZeroPos = GetNullPos(vtsCutMat);
+	vector<pair<int, int>> zeropath;
+
+	if (ZeroPos.first == endPos.first && ZeroPos.second == endPos.second) {
+		return -1;
+	}
+	zeropath = FindPath(sites, ZeroPos, endPos, MoveDirect);
+
+	//3.3.1 开始移动0到当前位置,从第一步开始，因为起点不动
+	for (int k = 1; k < zeropath.size(); ++k) {
+		int row = zeropath[k].first;
+		int col = zeropath[k].second;
+		int curposition = vtsCutMat[row][col]->curposition;
+		int newposition = -1;
+
+		if (ImageMove(row, col, curposition, newposition)) {
+			//重新生成图像显示
+			DrawPuzzleMat(curposition, newposition);
+			cv::waitKey(SleepTime);
+		}
+	}
+
+
+	return zeropath.size();
+}
+
+void ImgPuzzles::DealStep(vector<vector<int>>& sites, int step)
+{
+	int row = 0;
+	pair<int, int> sPos;
+	pair<int, int> endPos;
+	switch (step)
+	{
+	case RestoreStep::Num3:
+		row = step / sites.size() - 1;
+		//1.先将0移动到当前要处理的行的下面格
+		endPos = std::pair<int, int>(row + 1, 0);
+		NullMove(sites, endPos, DirectFirst::Left);
+
+		//2.解锁处理行前面的障碍点，用0的位置优先移动到计算点
+		for (int i = 0; i < sites[row].size(); ++i) {
+			sites[row][i] = 0;
+		}
+		endPos.first = row;
+		endPos.second = 2;
+		NullMove(sites, endPos, DirectFirst::Up);
+
+		//3.数字0再和当前要处理的点进行位置互换，将我们3位置移动到对应后锁定
+		endPos.first = row + 1;
+		endPos.second = 2;
+		//防止移动点是锁定的，将改为可移动
+		sites[endPos.first][endPos.second] = 0;
+		NullMove(sites, endPos, DirectFirst::Right);
+		//设置为锁定障碍点
+		sites[row][2] = 1;
+
+		//4.将数字0移动到第二步位置后还原当前行前三个数字
+		endPos.first = row;
+		endPos.second = 1;
+		NullMove(sites, endPos);
+
+		//5.将0优先按左移的方式把原来行前面的数字还原回来
+		endPos.first = row + 1;
+		endPos.second = 0;
+		NullMove(sites, endPos, DirectFirst::Left);
+		break;
+	case RestoreStep::Num5:
+		sites[1][0] = 0;
+
+		//获取开始结束的点位置
+
+		GetPos(vtsCutMat, step, sPos, endPos);
+		endPos.first = 1;
+		endPos.second = 2;
+		//获取应到达位置
+		RestorePath = FindPath(sites, sPos, endPos, DirectFirst::Up);
+
+		//3.遍历路径每一步处理移动路径
+		for (int i = 0; i < RestorePath.size(); ++i) {
+			cout << RestorePath[i].first << " " << RestorePath[i].second << endl;
+			//3.1数字当前位置不计算
+			int front = i - 1;
+			if (front < 0) continue;
+
+			//3.3把数字当前位置设置为障碍点，这样0不允许与当前数字交换位置
+			//cout << "sites:" << restorepath[front].first << " " << restorepath[front].second << endl;
+			sites[RestorePath[front].first][RestorePath[front].second] = 1;
+
+			int stepnum = NullMove(sites, RestorePath[i]);
+			if (stepnum != 0) {
+				//3.3.3 取消当前地图上的障碍点
+				sites[RestorePath[front].first][RestorePath[front].second] = 0;
+
+				int row = RestorePath[front].first;
+				int col = RestorePath[front].second;
+				int curposition = vtsCutMat[row][col]->curposition;
+				int newposition = -1;
+
+				if (ImageMove(row, col, curposition, newposition)) {
+					DrawPuzzleMat(curposition, newposition);
+					cv::waitKey(SleepTime);
+				}
+			}
+			else {
+
+				//如果没有路径就是遇到特殊情况，进行单独处理
+				DealStep(sites, step);
+			}
+		}
+		break;
+	case RestoreStep::Num6:
+		row = step / sites.size() - 1;
+		//1.先将0移动到当前要处理的行的下面格
+		endPos = std::pair<int, int>(row + 1, 0);
+		NullMove(sites, endPos, DirectFirst::Left);
+
+		//2.解锁处理行前面的障碍点，用0的位置优先移动到计算点
+		for (int i = 0; i < sites[row].size(); ++i) {
+			sites[row][i] = 0;
+		}
+		endPos.first = row;
+		endPos.second = 1;
+		NullMove(sites, endPos, DirectFirst::Up);
+
+		//3.将4和5锁定
+		sites[row][0] = 1;
+		sites[row + 1][0] = 1;
+		sites[row][2] = 0;
+		break;
+	case RestoreStep::Step4and5:
+		//1.将空白移动到5的位置
+		endPos = std::pair<int, int>(1, 1);
+		NullMove(sites, endPos, DirectFirst::Left);
+
+		//2.解锁4和5并还原回去
+		sites[1][0] = 0;
+		sites[2][0] = 0;
+		pair<int, int> endPos(2, 0);
+		NullMove(sites, endPos, DirectFirst::Left);
+
+		//3.锁定4和5
+		sites[1][0] = 1;
+		sites[1][1] = 1;
+		break;
+	}
+
+
+}
+
+//查找行动路径
+std::vector<std::pair<int, int>> ImgPuzzles::FindPath(std::vector<std::vector<int>>& sites, std::pair<int, int>& startpos, std::pair<int, int>& endpos, int directfirst)
+{
+	CalcPathPlan plan = CalcPathPlan();
+	plan.DirectFirst = directfirst;
+	plan.InitSites(sites);
+
+	return plan.GetPath(startpos, endpos);
 }
 

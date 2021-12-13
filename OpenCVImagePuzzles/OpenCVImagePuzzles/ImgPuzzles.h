@@ -1,6 +1,8 @@
 #pragma once
 #include <opencv2/opencv.hpp>
 #include <iostream>
+#include "..\..\Utils\CalcReverseNum.h"
+#include "..\..\Utils\CalcPathPlan.h"
 
 struct CutMat {
 public:
@@ -17,10 +19,31 @@ public:
 	}
 };
 
+
+//拼图移动步骤
+enum RestoreStep {
+	Num1 = 1,
+	Num2 = 2,
+	Num3 = 3,
+	Num4 = 4,
+	Num5 = 5,
+	Num6 = 6,
+	Num7 = 7,
+	Num8 = 8,
+	Num9 = 9,
+	Step3 = 50,
+	Step4and5 = 51,
+	StepFinal = 59,
+	NONE = 99
+};
+
+static vector<pair<int, int>> RestorePath;
+
 class ImgPuzzles
 {
 public:
 	//输出的图像
+	static cv::Mat TmpSrc;
 	static cv::Mat PuzzleMat;
 	static int SleepTime;
 	static bool IsShowStep;
@@ -41,6 +64,10 @@ public:
 
 	//显示移动后的拼图游戏图像
 	static void DrawPuzzleMat(int& curposition, int& newposition);
+
+
+	//AI自动还原
+	static void RestoreGame();
 private:
 	static CutMat* finalCutMat;
 	//分割图像的宽度
@@ -59,8 +86,32 @@ private:
 	//鼠标点击事件
 	static void OnMouseEvent(int event, int x, int y, int flags, void* param);
 	//获取当前鼠标左键点击事件
-	static bool ImageMove(int &row, int &col, int &curposition, int &newposition);
+	static bool ImageMove(int& row, int& col, int& curposition, int& newposition);
 	//获取鼠标点击位置
-	static void GetMousePostion(cv::Point pt, int& row, int& col, int &curposition);
+	static void GetMousePostion(cv::Point pt, int& row, int& col, int& curposition);
+
+	//检测当前要还原的步骤
+	//第一个参数为当前布局，第二个是可移动的地图，
+	//返回值为当前的步骤
+	static int CheckSteps(std::vector<std::vector<CutMat*>>& vts, std::vector<std::vector<int>>& sites);
+
+	//检测是否完成
+	static bool CheckFinished(std::vector<std::vector<CutMat*>>& vts);
+
+	//获取数字对应位置
+	static void GetPos(std::vector<std::vector<CutMat*>>& vts, int num, std::pair<int, int> &startpos, std::pair<int, int>& endpos);
+
+	//获取空白格位置
+	static  std::pair<int, int> GetNullPos(std::vector<std::vector<CutMat*>>& vts);
+
+	//空白格移动
+	static int NullMove(vector<vector<int>>& sites, pair<int, int>& endPos, int MoveDirect = DirectFirst::Up);
+
+	//特殊步骤处理
+	static void DealStep(vector<vector<int>>& sites, int step);
+
+	//查找行动路径
+	static std::vector<std::pair<int, int>> FindPath(std::vector<std::vector<int>>& sites, std::pair<int, int>& startpos, 
+		std::pair<int, int>& endpos, int directfirst = DirectFirst::None);
 };
 

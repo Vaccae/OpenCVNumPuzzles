@@ -6,34 +6,53 @@
 using namespace std;
 using namespace cv;
 
-
+//设置图片所以路径
+String FilePaths = "E:/DCIM/Resize";
 
 int main(int argc, char** argv) {
 
+
 	try
 	{
-		Mat src = imread("E:/DCIM/Resize/src2.png");
+		//获取目录下的所有文件
+		vector<String> files;
+		glob(FilePaths, files);
 
-		if (src.empty()) {
-			cout << "图像加载失败。。。。" << endl;
+		if (files.size() <= 0) {
+			cout << "找不到图片文件" << endl;
 			waitKey(0);
 			return -1;
 		}
 
-		//设置图像缩放到500*500
-		Mat tmpsrc;
-		resize(src, tmpsrc, Size(500, 500));
+		for (int index = 0; index < files.size(); ++index) {
+			//关闭所有显示窗口
+			destroyAllWindows();
 
-		imshow("src", src);
-		imshow("tmpsrc", tmpsrc);
+			String file = files[index];
 
-		//获取图像分割后的集合
-		ImgPuzzles::SplitMats(tmpsrc);
+			Mat src = imread(file);
 
-		//绘制图像
-		ImgPuzzles::CreatePuzzleMat();
+			if (src.empty()) {
+				cout << "图像加载失败。。。。" << endl;
+				waitKey(0);
+				return -1;
+			}
 
-		cv::waitKey(0);
+			//设置图像缩放到500*500
+			Mat tmpsrc;
+			resize(src, tmpsrc, Size(500, 500));
+
+			imshow("src", src);
+			imshow("tmpsrc", tmpsrc);
+
+			//获取图像分割后的集合
+			ImgPuzzles::SplitMats(tmpsrc);
+
+			//绘制图像
+			ImgPuzzles::CreatePuzzleMat();
+
+			cv::waitKey(0);
+		}
 		return 0;
 	}
 	catch (const std::exception& ex)
